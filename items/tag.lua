@@ -1,3 +1,6 @@
+
+--Wheel of Fortune (adds a Wheel to every shop)
+
 SMODS.Atlas {
     key = 'tag_wof',
     path = 'Work in Progress.png',

@@ -53,7 +53,7 @@ SMODS.Consumable({
 })
 
 
--- Freaky Sam Card
+-- sus? Card
 
 SMODS.Atlas{
     key = 'sus',

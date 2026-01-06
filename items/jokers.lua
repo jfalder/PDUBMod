@@ -362,6 +362,74 @@ SMODS.Joker{
 }
 
 
+---Hangman
+
+SMODS.Atlas{
+    key = "hang",
+    path = "hangman.jpeg",
+    px = 600,
+    py = 420,
+}
+
+
+SMODS.Joker{
+    key = 'hang',
+    loc_txt = {
+        name = "Hangman",
+        text = {"This Joker Gains {X:mult,C:white}X#1#{} Mult",
+                "when {C:attention}The Hanged Man{} is Used",
+                "Currently {X:mult,C:white}X#2#{} Mult)"}
+    },
+    atlas = 'hang',
+    rarity = 1,
+    cost = 7,
+    pools = {["pdubmodaddition"] = true},
+
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+
+
+    config = { 
+        extra = { 
+            add = 0.5,
+            count = 1,
+        } 
+    },
+
+
+
+
+    loc_vars = function(self, info_queue, center)
+        return { vars = {center.ability.extra.add, center.ability.extra.count} }
+    end,
+
+
+
+    calculate = function(self, card, context)
+        if context.consumeable then
+            if context.consumeable.ability.name == "The Hanged Man" then
+                card.ability.extra.count = card.ability.extra.count + card.ability.extra.add
+                return {
+                    message = "+x".. card.ability.extra.add
+                }
+            end
+        end
+
+        if context.joker_main then 
+            return {
+                mult = card.ability.extra.count
+            }
+        end
+    end,
+}
+
+
+
+
+
 
 ---Triple Swipe
 SMODS.Atlas{
@@ -629,9 +697,9 @@ SMODS.Joker{
     key = 'Freaky',
     loc_txt = {
         name = "Freaky Gogis",
-        text = {"When Wheel of Fortune fails, {C:red}+#1#{} Mult",
+        text = {"When {C:attention}Wheel of Fortune{} fails, {C:red}+#1#{} Mult",
                 "Currently: {C:red}+#2#{} Mult",
-                "Puts a Wheel of Fortune in Every Shop"}
+                "Puts a {C:attention}Wheel of Fortune{} in Every Shop"}
     },
     atlas = 'Freaky',
     rarity = 2,
