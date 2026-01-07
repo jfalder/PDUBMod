@@ -516,6 +516,45 @@ SMODS.Joker{
     end,
 }
 
+--Kinda Homeless
+SMODS.Atlas{
+    key = "homeless",
+    path = "homeless.jpg",
+    px= 320,
+    py = 420,
+}
+
+SMODS.Joker{
+    key = 'homeless',
+    loc_txt = {
+        name = "Kinda Homeless",
+        text = {"{X:mult,C:white}x1.5{} mult if played hand",
+                "{C:blue} IS NOT{} a{C:attention} Full House{}" }
+    },
+    atlas = 'homeless',
+    rarity = 3,
+    cost = 6,
+    pools = {["pdubmodaddition"] = true},
+
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = true,
+    perishable_compat = true,
+
+    pos = {x=0, y=0},
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            local is_full_house = context.poker_hands and next(context.poker_hands["Full House"] or {})
+            if not is_full_house then
+                return {
+                    x_mult = 1.5
+                }
+            end
+        end
+    end,
+}
 
 
 ---Mr. President
