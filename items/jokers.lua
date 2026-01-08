@@ -180,7 +180,7 @@ SMODS.Joker{
 
     calculate = function(self, card, context)
         if context.setting_blind then
-            G.GAME.blind.chips = math.floor(G.GAME.blind.chips * 0.9)
+            G.GAME.blind.chips = G.GAME.blind.chips * 0.9
         end
     end,
 }
@@ -571,7 +571,7 @@ SMODS.Joker{
     key = 'President',
     loc_txt = {
         name = "Mr.President",
-        text = {" {X:mult,C:white}^2{} to your Mult",
+        text = {" {X:black,C:white}^2{} to your Mult",
                 "{C:inactive}One Body Who?{}"}
     },
     atlas = 'President',
@@ -709,6 +709,52 @@ SMODS.Joker{
 
 
 
+--Hairline
+
+
+SMODS.Atlas{
+    key = 'hairline',
+    path = 'hairline.jpg',
+    px = 410,
+    py = 575,
+}
+
+SMODS.Joker{
+    key = 'hairline',
+    loc_txt = {
+        name = "Lebron James Hairline",
+        text = {"{C:purple}+1 Joker Slot{}",
+                "Also Removes {C:red}Oblelisk{} From All Shops"}
+    },
+
+    atlas = 'hairline',
+    rarity = 2,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true},
+
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = false,
+    eternal_compat = true,
+    perishable_compat = true,
+
+    pos = {x=0, y=0},
+
+
+    add_to_deck = function(self, card, from_debuff)
+        G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+        G.GAME.banned_keys['obelisk'] = true
+    end,
+
+    remove_from_deck = function(self, card, from_debuff)
+		G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+        G.GAME.banned_keys['obelisk'] = false
+	end,
+
+
+}
+
+
 
 --Freaky
 
@@ -757,8 +803,7 @@ SMODS.Joker{
         extra = { 
             add = 5,
             mult = 0,
-            count = 0
-        } ,
+        },
         
     },
 
@@ -795,16 +840,16 @@ SMODS.Joker{
             count = 1
         end
 
-        
         if context.consumeable then
-            if context.consumeable.ability.name == "Wheel of Fortune" and not context.consumeable.cry_wheel_success then
-                card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.add
-                return {
-                    message = "+".. card.ability.extra.add
-                }
+            if context.consumeable.ability.name == "The Wheel of Fortune" then
+                if not context.consumeable.cry_wheel_success then
+                    card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.add
+                    return {
+                        message = "+".. card.ability.extra.add
+                    }
+                end
             end
         end
-        
         
         if context.joker_main then 
             return {
