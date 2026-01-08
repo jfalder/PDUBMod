@@ -378,7 +378,7 @@ SMODS.Joker{
         name = "Hangman",
         text = {"This Joker Gains {X:mult,C:white}X#1#{} Mult",
                 "when {C:attention}The Hanged Man{} is Used",
-                "Currently {X:mult,C:white}X#2#{} Mult)"}
+                "Currently {X:mult,C:white}X#2#{} Mult"}
     },
     atlas = 'hang',
     rarity = 1,
@@ -864,3 +864,98 @@ SMODS.Joker{
 
 
 
+-- 21 kid
+
+
+SMODS.Atlas{
+    key = '21kid',
+    path = '21kid.png',
+    px = 40,
+    py = 50,
+}
+
+SMODS.Sound({key = "nine", path = "nine.ogg",})
+SMODS.Sound({key = "ten", path = "ten.ogg",})
+SMODS.Sound({key = "twennyone", path = "twennyone.ogg",})
+
+SMODS.Joker{
+    key = '21kid',
+    loc_txt= {
+        name = '21 Kid',
+        text = { "{X:mult,C:white} X#1# {} Mult if scored hand" ,
+                    "contains a {C:attention}9{} and a {}{C:attention}10{}"}
+    },
+    atlas = '21kid',
+    rarity = 1,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true},
+    
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = false,
+
+    pos = {x=0, y= 0},
+    config = { extra = {Xmult = 2.1}},
+
+    loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.Xmult}  }
+	end,
+
+    calculate = function(self, card, context)
+		if context.joker_main then
+            local hasnine = false
+            local hasten = false
+
+            local hastwo = false -- achievement check
+            local hasace = false
+
+            for i = 1, #context.scoring_hand do
+				if context.full_hand[i]:get_id() == 9 then
+                    hasnine = true
+                end
+                if context.full_hand[i]:get_id() == 10 then
+                    hasten = true
+                end
+                if context.full_hand[i]:get_id() == 14 then
+                    hasace = true
+                end
+                if context.full_hand[i]:get_id() == 2 then
+                    hastwo = true
+                end
+            end
+
+            if hasnine == true and hasten == true then   
+			return {
+				message = "21!",
+				Xmult_mod = card.ability.extra.Xmult,
+                sound= "pdub_twennyone",
+			}
+            end
+		end
+        if context.cardarea == G.play and context.individual and context.other_card then
+            local rank = context.other_card:get_id()
+			if rank == 9 then
+				return {
+                    sound = 'pdub_nine',
+                    message = '9!',
+                }
+			end
+            if rank == 10 then
+				return {
+                    sound = 'pdub_ten',
+                    message = '10!',
+                }
+			end
+		end
+
+    end,
+
+    check_for_unlock = function(self, args)
+        if args.type == 'test' then --not a real type, just a joke
+            unlock_card(self)
+        end
+        unlock_card(self) --unlocks the card if it isnt unlocked
+    end,
+}
