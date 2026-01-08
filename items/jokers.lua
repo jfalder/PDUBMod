@@ -724,7 +724,8 @@ SMODS.Joker{
     loc_txt = {
         name = "Lebron James Hairline",
         text = {"{C:purple}+1 Joker Slot{}",
-                "Also Removes {C:red}Oblelisk{} From All Shops"}
+                "Also Removes {C:red}Oblelisk{} From All Shops",
+                "{C:inactive}WE ARE NOT DOING DUNK, DUNK, DUNK{}"}
     },
 
     atlas = 'hairline',
@@ -883,7 +884,12 @@ SMODS.Joker{
     loc_txt= {
         name = '21 Kid',
         text = { "{X:mult,C:white} X#1# {} Mult if scored hand" ,
-                    "contains a {C:attention}9{} and a {}{C:attention}10{}"}
+                    "contains a {C:attention}9{} and a {}{C:attention}10{}",
+                    "{C:inactive}you stupid{}",
+                    "{C:inactive}no i'm not{}",
+                    "{C:inactive}what's nine plus ten?{}",
+                    "{C:inactive}twenty one{}",
+                    "{C:inactive}you stupid{}"}
     },
     atlas = '21kid',
     rarity = 1,
@@ -958,4 +964,82 @@ SMODS.Joker{
         end
         unlock_card(self) --unlocks the card if it isnt unlocked
     end,
+}
+
+
+
+--DMike
+
+
+SMODS.Atlas{
+    key = 'dmike',
+    path ='dmike.jpeg',
+    px = 100,
+    py = 115,
+}
+
+
+SMODS.Joker{
+    key = 'dmike',
+    loc_txt = {
+        name = "D Mike",
+        text = {"{C:red}+1{} Mult per sell value",
+                "takes {C:attention}$1{} of sell value from each joker at end of round",
+                "Currently {C:red}+#1#{} Mult"}
+    },
+    atlas= 'dmike',
+    rarity = 1,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true},
+    
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = false,
+
+    pos = {x=0.05,y=0},
+    config = { extra = {mult = 0}},
+
+    loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.mult}  }
+	end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            return {mult = card.ability.extra.mult}
+        end
+
+        if context.end_of_round and context.main_eval and not context.repetition and not context.individual then
+            local gained = 0
+
+            if G and G.jokers and G.jokers.cards then 
+                for _, j in ipairs(G.jokers.cards) do
+                    if j ~= card and j.ability then 
+                        local before = j.sell_cost or 0
+
+                        j.ability.extra_value = (j.ability.extra_value or 0) - 1
+
+                        if j.set_cost then j:set_cost() end 
+
+                        local after = j.sell_cost or before
+
+                        if after < before then 
+                            gained = gained + (before - after)
+                        end
+                    end
+                end
+            end
+        
+            if gained > 0 then
+                card.ability.extra.mult = (card.ability.extra.mult or 0) + gained
+                card.sell_cost = card.sell_cost + gained
+                return {
+                    message = "+"..tostring(gained).."Mult",
+                    color = G.C.MULT,
+                }
+            end
+        end
+    end,
+
 }
