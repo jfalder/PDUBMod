@@ -9,12 +9,11 @@ SMODS.Atlas {
 SMODS.Seal {
     name = 'freak_seal',
     key = 'freak_seal',
+    badge_colour = HEX("FF00FF"),
     loc_txt = {
         label = 'FREAK SEAL',
         name = 'FREAK SEAL',
-        text = {  "Work in Progress",
-                    "Check Again Later",
-        }
+        text = {  "{X:blue,C:white}x1.25{} {C:blue}Chips{}"}
     },
 
 
@@ -22,8 +21,8 @@ SMODS.Seal {
     pos = {x=0,y=0},
 
     calculate = function (self, card, context)
-        if context.main_scoring then
-            return {message ='yup'}
+        if context.main_scoring and context.cardarea == G.play then
+            return {x_chips = 1.25}
         end
 
     end,

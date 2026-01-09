@@ -428,9 +428,6 @@ SMODS.Joker{
 
 
 
-
-
-
 ---Triple Swipe
 SMODS.Atlas{
     key = "Triple",
@@ -707,8 +704,6 @@ SMODS.Joker{
 }
 
 
-
-
 --Hairline
 
 
@@ -756,9 +751,17 @@ SMODS.Joker{
 }
 
 
-
 --Freaky
 
+
+local function edition_signature()
+    local parts = {}
+    for i, j in ipairs(G.jokers.cards) do
+        local t = (j.edition and j.edition.type) and j.edition.type or "none"
+        parts[#parts+1] = tostring(i) .. ":" .. t
+    end
+    return table.concat(parts, "|")
+end
 
 
 function get_edition_joker_count()
@@ -783,9 +786,11 @@ SMODS.Joker{
     key = 'Freaky',
     loc_txt = {
         name = "Freaky Gogis",
-        text = {"When {C:attention}Wheel of Fortune{} fails, {C:red}+#1#{} Mult",
-                "Currently: {C:red}+#2#{} Mult",
-                "Puts a {C:attention}Wheel of Fortune{} in Every Shop"}
+        text = {
+            "When {C:attention}Wheel of Fortune{} fails, {C:red}+#1#{} Mult",
+            "Currently: {C:red}+#2#{} Mult",
+            "Puts a {C:attention}Wheel of Fortune{} in Every Shop"
+        }
     },
     atlas = 'Freaky',
     rarity = 2,
@@ -800,20 +805,19 @@ SMODS.Joker{
 
     pos = {x=0, y=0.1},
 
-    config = { 
-        extra = { 
+    config = {
+        extra = {
             add = 5,
             mult = 0,
+            tag_added_this_round = false, -- <--- store state here
         },
-        
     },
 
     loc_vars = function(self, info_queue, center)
-        info_queue[#info_queue + 1] = { key = 'tag_wof', set = 'Tag' }
-        return { vars = {center.ability.extra.add, center.ability.extra.mult, localize { type = 'name_text', set = 'Tag', key = 'tag_wof' }} }
-     
+        -- use the SAME key you actually add
+        info_queue[#info_queue + 1] = { key = 'tag_pdub_tag_wof', set = 'Tag' }
+        return { vars = { center.ability.extra.add, center.ability.extra.mult } }
     end,
-
 
     add_to_deck = function(self, card, from_debuff)
         G.GAME.shop.joker_max = G.GAME.shop.joker_max + 1
@@ -829,38 +833,63 @@ SMODS.Joker{
     end,
 
     calculate = function(self, card, context)
+        -- Prevent blueprint copies from also injecting tags
+        if context.blueprint then return end
 
-
-        if G.GAME.current_round.hands_played == 0 then
-            count = 0
+        -- Reset once per round (this is a common reliable hook)
+        if context.setting_blind then
+            card.ability.extra.tag_added_this_round = false
         end
 
-        if context.end_of_round and count == 0 then
-        
+        -- Add the tag once per round
+        if context.end_of_round and not card.ability.extra.tag_added_this_round then
             add_tag(Tag('tag_pdub_tag_wof'))
-            count = 1
+            card.ability.extra.tag_added_this_round = true
         end
+       if context.using_consumeable
+        and context.consumeable
+        and context.consumeable.ability
+        and context.consumeable.ability.name == "The Wheel of Fortune"
+        then
+            local wof = context.consumeable
 
-        if context.consumeable then
-            if context.consumeable.ability.name == "The Wheel of Fortune" then
-                if not context.consumeable.cry_wheel_success then
-                    card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.add
-                    return {
-                        message = "+".. card.ability.extra.add
-                    }
-                end
+            if not wof._freaky_pending then
+                wof._freaky_pending = true
+                wof._freaky_sig_before = edition_signature()
+
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.6, -- Wheel resolves later; give it time
+                    func = function()
+                        local after = edition_signature()
+                        local before = wof._freaky_sig_before
+
+                        -- if nothing about editions changed, Wheel failed
+                        if after == before then
+                            card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.add
+                            card_eval_status_text(card, 'extra', nil, nil, nil, {
+                                message = "+" .. card.ability.extra.add .. " Mult"
+                            })
+                        end
+
+                        wof._freaky_pending = nil
+                        wof._freaky_sig_before = nil
+                        return true
+                    end
+                }))
             end
         end
-        
-        if context.joker_main then 
+
+
+
+
+        if context.joker_main then
             return {
                 mult = card.ability.extra.mult
             }
         end
-        
     end,
 }
-
 
 
 
@@ -1043,3 +1072,6 @@ SMODS.Joker{
     end,
 
 }
+
+
+
