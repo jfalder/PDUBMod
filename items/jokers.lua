@@ -1075,3 +1075,91 @@ SMODS.Joker{
 
 
 
+--chud joker
+
+
+
+SMODS.Atlas{
+    key = 'chud',
+    path = 'chud.jpg',
+    px = 285,
+    py = 400,
+}
+
+
+
+
+local function deep_copy(t)
+    if type(t) ~= 'table' then return t end
+    local out  = {}
+    for k, v in pairs(t) do
+        out[k] = deep_copy(v)
+    end
+    return out
+end
+
+local function zero_numeric_leaves(t)
+    if type(t) ~= 'table' then return t end
+    for k, v in pairs(t) do 
+        if type(v) == 'number' then 
+            t[k] = 0
+        elseif type(v) == 'table' then 
+            zero_numeric_leaves(v)
+        end
+    end
+end
+
+
+SMODS.Joker{
+    key = 'chud',
+    loc_txt ={
+        name = 'Chud Joker',
+        text = {
+                "All listed probabilities are now {C:attention}0%{}",
+                '{C:inactive}frick my big fat chungus life{}'
+        }
+    },
+    atlas = 'chud',
+    rarity = 1,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true},
+    
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = false,
+
+    pos = {x=0,y=0},
+
+
+    add_to_deck = function(self, card, from_debuff)
+        if not (G and G.GAME) then return end
+        G.GAME._chud_count = (G.GAME._chud_count or 0) + 1
+
+
+        if G.GAME._chud_count == 1 then
+            G.GAME._chud_prob_backup = deep_copy(G.GAME.probabilities or {})
+            if G.GAME.probabilities then 
+                zero_numeric_leaves(G.GAME.probabilities)
+            end
+        end
+    end,
+
+
+    remove_from_deck = function(self, card, from_debuff)
+        if not (G and G.GAME) then return end
+        G.GAME._chud_count = (G.GAME._chud_count or 1) - 1
+
+
+        if G.GAME._chud_count <= 0 then
+            G.GAME._chud_count = 0
+            if G.GAME._chud_prob_backup then
+                G.GAME.probabilities = G.GAME._chud_prob_backup
+                G.GAME._chud_prob_backup = nil
+            end
+        end
+    end,
+
+
+}
