@@ -1163,3 +1163,44 @@ SMODS.Joker{
 
 
 }
+
+
+
+
+-- mega knight jensen
+
+SMODS.Atlas {
+    key = 'mkj',
+    path = "MKJ.jpg",
+    px = 400,
+    py = 600,
+}
+
+
+SMODS.Joker{
+    key = 'mkj',
+    loc_txt ={
+        name = 'Mega Knight Jensen',
+        text = {
+                "In Progress"
+        }
+    },
+    atlas = 'mkj',
+    rarity = 1,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true, ["SisterWing"] = true},
+    
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = false,
+
+    pos = {x=0,y=0},
+
+
+}
+
+
+
+--
