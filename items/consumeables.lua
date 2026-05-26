@@ -188,3 +188,108 @@ SMODS.Consumable{
 
 
 }
+
+
+--seth baker 
+
+
+SMODS.Atlas{
+    key = 'seth_baker',
+    path = 'seth_baker.JPG',
+    px = 575,
+    py = 1000,
+}
+
+SMODS.Consumable{
+    key = 'seth_baker',
+    set = 'Tarot',
+    loc_txt = {
+        name = 'Seth Baker Legendary Joker',
+        text = {
+            "{C:green}1 in 735,529{} chance to add",
+             "{C:attention}4{} {C:purple}Negative{} Legendary Jokers"
+        }
+    },
+
+    unlocked = true,
+    cost = 1,
+    atlas = 'seth_baker',
+    pos = {x=0, y=0},
+
+
+    can_use = function(self, card)
+        return true
+    end,
+
+
+    use = function(self, card, area, copier)
+        if pseudorandom('seth_baker') < 1/735529 then 
+            local legendaries = {
+                'j_caino',
+                'j_triboulet',
+                'j_yorick',
+                'j_chicot',
+                'j_perkeo',
+                'j_pdub_President'
+            }
+
+            for i = 1, 4 do
+            local index = pseudorandom(
+                pseudoseed('seth_baker_legendary_' .. i),
+                1,
+                #legendaries
+                )
+
+                local legendary_key = legendaries[index]
+
+                table.remove(legendaries, index)
+
+
+                local new_card = create_card('Joker', G.jokers, nil, nil, nil, nil, legendary_key, 'seth_baker')
+
+                new_card:set_edition({negative = true}, true)
+                new_card:add_to_deck()
+                G.jokers:emplace(new_card)
+
+            end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.3,
+                func = function()
+                    attention_text({
+                        text = "I guess it is possible",
+                        scale = 1.3,
+                        hold = 1.4,
+                        backdrop_colour = G.C.PURPLE,
+                        align = 'cm',
+                        major = G.ROOM_ATTACH,
+                        offset = {x = 0, y = 0},
+                        silent = true
+                    })
+
+                    play_sound('tarot2', 1, 0.4)
+                    card:juice_up(0.3, 0.5)
+
+                    return true
+                end
+            }))
+        else
+            G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.4, func = function()
+                attention_text({
+                    text = localize('k_nope_ex'),
+                    scale = 1.3, 
+                    hold = 1.4,
+                    major = card,
+                    backdrop_colour = G.C.SECONDARY_SET.Tarot,
+                    align = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK) and 'tm' or 'cm',
+                    offset = {x = 0, y = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK) and -0.2 or 0},
+                    silent = true
+                    })
+                    G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.06*G.SETTINGS.GAMESPEED, blockable = false, blocking = false, func = function()
+                        play_sound('tarot2', 0.76, 0.4);return true end}))
+                    play_sound('tarot2', 1, 0.4)
+                    card:juice_up(0.3, 0.5)
+            return true end }))
+        end
+    end
+}

@@ -180,7 +180,7 @@ SMODS.Joker{
 
     calculate = function(self, card, context)
         if context.setting_blind then
-            G.GAME.blind.chips = G.GAME.blind.chips * 0.9
+            G.GAME.blind.chips = (G.GAME.blind.chips / 10) * 9
         end
     end,
 }
@@ -193,8 +193,6 @@ SMODS.Atlas{
     px= 73,
     py = 110,
 }
-
-
 
 
 SMODS.Joker{
@@ -559,6 +557,10 @@ SMODS.Joker{
 SMODS.Atlas{
     key = "President",
     path = "President.png",
+    config = {
+        
+        extra = 'president',
+    },
     px= 450,
     py = 750,
 }
@@ -756,22 +758,48 @@ SMODS.Joker{
 
 local function edition_signature()
     local parts = {}
+
     for i, j in ipairs(G.jokers.cards) do
         local t = (j.edition and j.edition.type) and j.edition.type or "none"
-        parts[#parts+1] = tostring(i) .. ":" .. t
+        parts[#parts + 1] = tostring(i) .. ":" .. t
     end
+
     return table.concat(parts, "|")
 end
 
 
-function get_edition_joker_count()
-    local count = 0
-    for _, joker in ipairs(G.jokers.cards) do
-        if joker.edition and joker.edition.type then
-            count = count + 1
-        end
+local function add_freaky_wof_to_shop()
+    if not G.shop_jokers then return end
+    if not G.shop_jokers.cards then return end
+    if not G.GAME then return end
+
+    
+    -- Prevent the shop area limit from being increased multiple times
+    if not G.shop_jokers._freaky_limit_added then
+        G.shop_jokers.config.card_limit = G.shop_jokers.config.card_limit + 1
+        G.shop_jokers._freaky_limit_added = true
     end
-    return count
+
+    local wof = create_card(
+        'Tarot',
+        G.shop_jokers,
+        nil,
+        nil,
+        nil,
+        nil,
+        'c_wheel_of_fortune',
+        'freaky_wof'
+    )
+
+    wof.ability.couponed = false
+    wof:set_cost()
+
+    create_shop_card_ui(wof, 'Tarot', G.shop_jokers)
+
+    -- Important: put it inside the shop area after increasing card_limit
+    G.shop_jokers:emplace(wof)
+
+    
 end
 
 SMODS.Atlas {
@@ -782,20 +810,24 @@ SMODS.Atlas {
 }
 
 
-SMODS.Joker{
+SMODS.Joker {
     key = 'Freaky',
+
     loc_txt = {
         name = "Freaky Gogis",
         text = {
             "When {C:attention}Wheel of Fortune{} fails, {C:red}+#1#{} Mult",
             "Currently: {C:red}+#2#{} Mult",
-            "Puts a {C:attention}Wheel of Fortune{} in Every Shop"
+            "Adds a {C:attention}Wheel of Fortune{} to every shop"
         }
     },
+
     atlas = 'Freaky',
     rarity = 2,
     cost = 4,
-    pools = {["pdubmodaddition"] = true},
+    pools = {
+        ["pdubmodaddition"] = true
+    },
 
     unlocked = true,
     discovered = true,
@@ -803,53 +835,56 @@ SMODS.Joker{
     eternal_compat = true,
     perishable_compat = true,
 
-    pos = {x=0, y=0.1},
+    pos = { x = 0, y = 0 },
 
     config = {
         extra = {
             add = 5,
             mult = 0,
-            tag_added_this_round = false, -- <--- store state here
         },
     },
 
     loc_vars = function(self, info_queue, center)
-        -- use the SAME key you actually add
-        info_queue[#info_queue + 1] = { key = 'tag_pdub_tag_wof', set = 'Tag' }
-        return { vars = { center.ability.extra.add, center.ability.extra.mult } }
-    end,
-
-    add_to_deck = function(self, card, from_debuff)
-        G.GAME.shop.joker_max = G.GAME.shop.joker_max + 1
-        if G.shop then
-            G.shop:recalculate()
-            G.shop_jokers.T.w = 6*1.02*G.CARD_W
-            G.shop_jokers.T.h = 1.05*G.CARD_H
-        end
-    end,
-
-    remove_from_deck = function(self, card, from_debuff)
-        G.GAME.shop.joker_max = G.GAME.shop.joker_max - 1
+        return {
+            vars = {
+                center.ability.extra.add,
+                center.ability.extra.mult
+            }
+        }
     end,
 
     calculate = function(self, card, context)
-        -- Prevent blueprint copies from also injecting tags
-        if context.blueprint then return end
+        -- Prevent Blueprint copies from adding extra shop Wheels
+        if context.blueprint then
+            return
+        end
 
-        -- Reset once per round (this is a common reliable hook)
+       -- Reset the shop Wheel flag when a new blind starts
         if context.setting_blind then
-            card.ability.extra.tag_added_this_round = false
+            G.GAME.freaky_wof_added_this_shop = false
         end
 
-        -- Add the tag once per round
-        if context.end_of_round and not card.ability.extra.tag_added_this_round then
-            add_tag(Tag('tag_pdub_tag_wof'))
-            card.ability.extra.tag_added_this_round = true
+        -- Add Wheel once when the shop starts
+        if context.starting_shop and not G.GAME.freaky_wof_added_this_shop then
+            G.GAME.freaky_wof_added_this_shop = true
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.1,
+
+                func = function()
+                    add_freaky_wof_to_shop()
+                    return true
+                end
+            }))
         end
-       if context.using_consumeable
-        and context.consumeable
-        and context.consumeable.ability
-        and context.consumeable.ability.name == "The Wheel of Fortune"
+
+        -- Detect when Wheel of Fortune is used
+        if context.using_consumeable
+            and context.consumeable
+            and context.consumeable.config
+            and context.consumeable.config.center
+            and context.consumeable.config.center.key == "c_wheel_of_fortune"
         then
             local wof = context.consumeable
 
@@ -859,14 +894,17 @@ SMODS.Joker{
 
                 G.E_MANAGER:add_event(Event({
                     trigger = 'after',
-                    delay = 0.6, -- Wheel resolves later; give it time
-                    func = function()
-                        local after = edition_signature()
-                        local before = wof._freaky_sig_before
+                    delay = 0.6,
 
-                        -- if nothing about editions changed, Wheel failed
+                    func = function()
+                        local before = wof._freaky_sig_before
+                        local after = edition_signature()
+
+                        -- If Joker editions did not change, Wheel failed
                         if after == before then
-                            card.ability.extra.mult = card.ability.extra.mult + card.ability.extra.add
+                            card.ability.extra.mult =
+                                card.ability.extra.mult + card.ability.extra.add
+
                             card_eval_status_text(card, 'extra', nil, nil, nil, {
                                 message = "+" .. card.ability.extra.add .. " Mult"
                             })
@@ -874,15 +912,14 @@ SMODS.Joker{
 
                         wof._freaky_pending = nil
                         wof._freaky_sig_before = nil
+
                         return true
                     end
                 }))
             end
         end
 
-
-
-
+        -- Apply stored Mult during scoring
         if context.joker_main then
             return {
                 mult = card.ability.extra.mult
@@ -890,7 +927,6 @@ SMODS.Joker{
         end
     end,
 }
-
 
 
 
@@ -1203,4 +1239,48 @@ SMODS.Joker{
 
 
 
---
+--The BIG Embry
+
+SMODS.Atlas {
+    key = 'embry',
+    path = 'big_embry.JPEG',
+    px = 350,
+    py = 400,
+}
+
+
+SMODS.Joker{
+    key = 'embry',
+    loc_txt ={
+        name = 'The BIG Embry',
+        text = {
+                "At the end of round, create a {C:purple}Negative{}{C:red} Lusty Joker{}",
+                "{C:inactive}This will make me go up in the funny list right?{}"
+        }
+    },
+    atlas = 'embry',
+    rarity = 1,
+    cost = 4,
+    pools = {["pdubmodaddition"] = true},
+    
+    unlocked = true,
+    discovered = true,
+    blueprint_compat = true,
+    eternal_compat = false,
+    perishable_compat = false,
+
+    pos = {x=0,y=0},
+
+
+
+    calculate = function (self,card, context)
+        if context.end_of_round and context.cardarea == G.jokers and context.main_eval then
+            local card = create_card('Joker', G.jokers, nil, nil, nil, nil, 'j_lusty_joker', 'embry')
+            card:set_edition({negative = true}, true)
+            card:add_to_deck()
+            G.jokers:emplace(card)
+        end
+    end
+
+
+}
