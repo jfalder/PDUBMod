@@ -1218,12 +1218,13 @@ SMODS.Joker{
     loc_txt ={
         name = 'Mega Knight Jensen',
         text = {
-                "In Progress"
+                "All {C:attention}Red Seal Steel Kings{}",
+                    "held in hand grant {X:mult,C:white}X#1#{} Mult",
         }
     },
     atlas = 'mkj',
-    rarity = 1,
-    cost = 4,
+    rarity = 3,
+    cost = 10,
     pools = {["pdubmodaddition"] = true, ["SisterWing"] = true},
     
     unlocked = true,
@@ -1234,8 +1235,35 @@ SMODS.Joker{
 
     pos = {x=0,y=0},
 
+    config = { extra = {multamt = 1.5^4}},
 
+    loc_vars = function(self, info_queue, center)
+		return { vars = { center.ability.extra.multamt}  }
+	end,
+    
+    calculate = function(self, card, context)
+        if context.joker_main then
+            for i = 1, #G.hand.cards do
+                local _card = G.hand.cards[i]
+                if _card.seal == "Red" and _card:get_id() == 13 and SMODS.has_enhancement(_card, 'm_steel') then 
+                    return {
+                        Xmult_mod = card.ability.extra.multamt,
+                        message = "X" .. card.ability.extra.multamt
+                    }
+                end
+            end
+        end
+    end,
+
+    check_for_unlock = function(self, args)
+        if args.type == 'test' then --not a real type, just a joke
+            unlock_card(self)
+        end
+        unlock_card(self) --unlocks the card if it isnt unlocked
+    end,
 }
+
+
 
 
 
